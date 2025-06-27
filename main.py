@@ -1,4 +1,5 @@
 from flask import Flask, render_template_string
+import pandas as pd
 import requests
 from io import StringIO
 from datetime import datetime
