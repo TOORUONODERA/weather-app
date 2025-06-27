@@ -48,4 +48,5 @@ def index():
 
         html = "<br>".join(results)
     except Exception as e:
-        html = f"データ取得中にエラーが発
+       html = f"データ取得中にエラーが発生しました: {e}"
+
