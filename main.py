@@ -1,7 +1,7 @@
 from flask import Flask, render_template_string
-import pandas as pd
 import requests
-from io import StringIO
+import pandas as pd
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -13,44 +13,52 @@ def index():
         res = requests.get(csv_url)
         res.raise_for_status()
 
-        # pandasで読み込み（Shift-JIS）
-        df = pd.read_csv(StringIO(res.content.decode("shift_jis")))
+        # 文字化け対策：まずShift-JISで読む
+        try:
+            df = pd.read_csv(pd.compat.StringIO(res.text), encoding="shift_jis")
+        except Exception:
+            from io import StringIO
+            df = pd.read_csv(StringIO(res.text), encoding="shift_jis")
 
-        # 欲しい列を探す
-        temp_col = next((col for col in df.columns if "の最高気温" in col), None)
+        # カラム名取得
+        temp_col = next((col for col in df.columns if "の最高気温(℃)" in col), None)
+        hour_col = next((col for col in df.columns if "の最高気温起時（時）" in col), None)
+        minute_col = next((col for col in df.columns if "の最高気温起時（分）" in col), None)
         place_col = "地点"
 
+        # 対象地点
         targets = ["江別", "札幌", "せたな", "今金", "豊中"]
+
         results = []
-
         for place in targets:
-            match = df[df[place_col].str.contains(place, na=False)]
-            if not match.empty:
-                temp = match.iloc[0][temp_col]
-                results.append(f"{place}の最高気温：{temp}℃")
+            df_filtered = df[df[place_col].str.contains(place, na=False)]
+            if not df_filtered.empty:
+                row = df_filtered.iloc[0]
+                temp = row[temp_col]
+                hour = int(row[hour_col])
+                minute = int(row[minute_col])
+                results.append(f"<strong>{place}</strong>：{temp}℃（{hour}時{minute}分）")
             else:
-                results.append(f"{place}のデータが見つかりません")
+                results.append(f"<strong>{place}</strong>：データがありません")
 
-        html_content = "<br>".join(results)
+        html = "<br><br>".join(results)
 
     except Exception as e:
-        html_content = f"データ取得中にエラーが発生しました: {e}"
+        html = f"<span style='color:red;'>データ取得中にエラーが発生しました: {e}</span>"
 
-    # HTML生成（大きな文字サイズ）
     return render_template_string(f"""
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <title>今日の気温</title>
-    </head>
-    <body style="font-size:32px; line-height:1.8; font-family:sans-serif; padding:30px;">
-        <h2 style="font-size:40px;">今日の気温（5地点）</h2>
-        <p>{html_content}</p>
-    </body>
-    </html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>今日の気温</title>
+        </head>
+        <body style="font-size: 28px; line-height: 2;">
+            <h2>🌡️ 今日の気温（現在の最高気温・観測時刻）</h2>
+            <p>{html}</p>
+        </body>
+        </html>
     """)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
-
 
