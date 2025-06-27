@@ -21,7 +21,6 @@ def index():
         except Exception:
             df = pd.read_csv("jma_temperature.csv", encoding="utf-8")
 
-        # 対象地点
         targets = ["江別", "札幌", "せたな", "今金", "豊中"]
         place_col = "地点"
         temp_col = "27日の最高気温(℃)"
@@ -35,7 +34,6 @@ def index():
             if not df_filtered.empty:
                 temp = df_filtered.iloc[0][temp_col]
 
-                # 起時（時・分）を取得。数値化できなければ「情報なし」
                 try:
                     hour = int(df_filtered.iloc[0][hour_col])
                     minute = int(df_filtered.iloc[0][min_col])
@@ -49,12 +47,9 @@ def index():
             else:
                 results.append(f"{place}のデータがありません")
 
-        # HTTPヘッダーDateからJSTに変換してデータ更新日時表示
         date_header = res.headers.get("Date")
         if date_header:
-            # GMT日時をdatetimeに変換
             dt_gmt = datetime.strptime(date_header, "%a, %d %b %Y %H:%M:%S GMT")
-            # JSTはGMT+9時間
             dt_jst = dt_gmt + timedelta(hours=9)
             updated_str = dt_jst.strftime("%Y-%m-%d %H:%M:%S JST")
         else:
@@ -68,11 +63,29 @@ def index():
 
     return render_template_string(f"""
         <html>
-        <head><title>今日の気温</title></head>
+        <head>
+            <title>今日の気温</title>
+            <style>
+                body {{
+                    background-color: black;
+                    color: white;
+                    font-size: 24px;
+                    font-family: Arial, sans-serif;
+                    padding: 20px;
+                }}
+                h2 {{
+                    font-size: 36px;
+                    margin-bottom: 20px;
+                }}
+                p {{
+                    line-height: 1.6;
+                }}
+            </style>
+        </head>
         <body>
-        <h2>今日の気温（5地点）</h2>
-        <p>データ更新日時: {updated_str}</p>
-        <p>{html}</p>
+            <h2>今日の気温（5地点）</h2>
+            <p>データ更新日時: {updated_str}</p>
+            <p>{html}</p>
         </body>
         </html>
     """)
