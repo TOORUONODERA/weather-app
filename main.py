@@ -13,7 +13,8 @@ def index():
     try:
         res = requests.get(csv_url)
         res.raise_for_status()
-        df = pd.read_csv(pd.compat.StringIO(res.text), encoding="shift_jis")
+        # pandas.compat.StringIOの代わりにio.StringIOを使う
+        df = pd.read_csv(StringIO(res.text), encoding="shift_jis")
 
         temp_col = next((col for col in df.columns if "の最高気温(℃)" in col), None)
         place_col = "地点"
@@ -42,3 +43,4 @@ def index():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
+
