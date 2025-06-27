@@ -1,6 +1,6 @@
 from flask import Flask, render_template_string
 import requests
-import pandas as pd
+from io import StringIO
 from datetime import datetime
 
 app = Flask(__name__)
